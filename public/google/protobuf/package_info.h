@@ -28,41 +28,37 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: jasonh@google.com (Jason Hsueh)
+// Author: kenton@google.com (Kenton Varda)
+//  Based on original Protocol Buffers design by
+//  Sanjay Ghemawat, Jeff Dean, and others.
 //
-// Implements methods of coded_stream.h that need to be inlined for performance
-// reasons, but should not be defined in a public header.
-
-#ifndef GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
-#define GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
-
-#include <google/protobuf/io/coded_stream.h>
-#include <string>
-#include <google/protobuf/stubs/stl_util.h>
+// This file exists solely to document the google::protobuf namespace.
+// It is not compiled into anything, but it may be read by an automated
+// documentation generator.
 
 namespace google {
-namespace protobuf {
-namespace io {
 
-inline bool CodedInputStream::InternalReadStringInline(string* buffer,
-                                                       int size) {
-  if (size < 0) return false;  // security: size is often user-supplied
-
-  if (BufferSize() >= size) {
-    STLStringResizeUninitialized(buffer, size);
-    // When buffer is empty, string_as_array(buffer) will return NULL but memcpy
-    // requires non-NULL pointers even when size is 0. Hench this check.
-    if (size > 0) {
-      memcpy(string_as_array(buffer), buffer_, size);
-      Advance(size);
-    }
-    return true;
-  }
-
-  return ReadStringFallback(buffer, size);
-}
-
-}  // namespace io
-}  // namespace protobuf
+// Core components of the Protocol Buffers runtime library.
+//
+// The files in this package represent the core of the Protocol Buffer
+// system.  All of them are part of the libprotobuf library.
+//
+// A note on thread-safety:
+//
+// Thread-safety in the Protocol Buffer library follows a simple rule:
+// unless explicitly noted otherwise, it is always safe to use an object
+// from multiple threads simultaneously as long as the object is declared
+// const in all threads (or, it is only used in ways that would be allowed
+// if it were declared const).  However, if an object is accessed in one
+// thread in a way that would not be allowed if it were const, then it is
+// not safe to access that object in any other thread simultaneously.
+//
+// Put simply, read-only access to an object can happen in multiple threads
+// simultaneously, but write access can only happen in a single thread at
+// a time.
+//
+// The implementation does contain some "const" methods which actually modify
+// the object behind the scenes -- e.g., to cache results -- but in these cases
+// mutex locking is used to make the access thread-safe.
+namespace protobuf {}
 }  // namespace google
-#endif  // GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__

@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2012 Google Inc.  All rights reserved.
 // http://code.google.com/p/protobuf/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,46 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: jasonh@google.com (Jason Hsueh)
-//
-// Implements methods of coded_stream.h that need to be inlined for performance
-// reasons, but should not be defined in a public header.
+// This file is an internal atomic implementation, use atomicops.h instead.
 
-#ifndef GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
-#define GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
-
-#include <google/protobuf/io/coded_stream.h>
-#include <string>
-#include <google/protobuf/stubs/stl_util.h>
+#ifndef GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_
+#define GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_
 
 namespace google {
 namespace protobuf {
-namespace io {
+namespace internal {
 
-inline bool CodedInputStream::InternalReadStringInline(string* buffer,
-                                                       int size) {
-  if (size < 0) return false;  // security: size is often user-supplied
-
-  if (BufferSize() >= size) {
-    STLStringResizeUninitialized(buffer, size);
-    // When buffer is empty, string_as_array(buffer) will return NULL but memcpy
-    // requires non-NULL pointers even when size is 0. Hench this check.
-    if (size > 0) {
-      memcpy(string_as_array(buffer), buffer_, size);
-      Advance(size);
-    }
-    return true;
-  }
-
-  return ReadStringFallback(buffer, size);
+inline Atomic32 NoBarrier_CompareAndSwap(volatile Atomic32* ptr,
+                                         Atomic32 old_value,
+                                         Atomic32 new_value) {
+  return __sync_val_compare_and_swap(ptr, old_value, new_value);
 }
 
-}  // namespace io
+inline void MemoryBarrier() {
+  __sync_synchronize();
+}
+
+inline Atomic32 Acquire_CompareAndSwap(volatile Atomic32* ptr,
+                                       Atomic32 old_value,
+                                       Atomic32 new_value) {
+  Atomic32 ret = NoBarrier_CompareAndSwap(ptr, old_value, new_value);
+  MemoryBarrier();
+  return ret;
+}
+
+inline void Release_Store(volatile Atomic32* ptr, Atomic32 value) {
+  MemoryBarrier();
+  *ptr = value;
+}
+
+inline Atomic32 Acquire_Load(volatile const Atomic32* ptr) {
+  Atomic32 value = *ptr;
+  MemoryBarrier();
+  return value;
+}
+
+}  // namespace internal
 }  // namespace protobuf
 }  // namespace google
-#endif  // GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
+
+#endif  // GOOGLE_PROTOBUF_ATOMICOPS_INTERNALS_PNACL_H_

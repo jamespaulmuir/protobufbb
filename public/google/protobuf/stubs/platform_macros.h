@@ -1,5 +1,5 @@
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2012 Google Inc.  All rights reserved.
 // http://code.google.com/p/protobuf/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,43 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Author: jasonh@google.com (Jason Hsueh)
-//
-// Implements methods of coded_stream.h that need to be inlined for performance
-// reasons, but should not be defined in a public header.
+#ifndef GOOGLE_PROTOBUF_PLATFORM_MACROS_H_
+#define GOOGLE_PROTOBUF_PLATFORM_MACROS_H_
 
-#ifndef GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
-#define GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
+#include <google/protobuf/stubs/common.h>
 
-#include <google/protobuf/io/coded_stream.h>
-#include <string>
-#include <google/protobuf/stubs/stl_util.h>
+// Processor architecture detection.  For more info on what's defined, see:
+//   http://msdn.microsoft.com/en-us/library/b0084kay.aspx
+//   http://www.agner.org/optimize/calling_conventions.pdf
+//   or with gcc, run: "echo | gcc -E -dM -"
+#if defined(_M_X64) || defined(__x86_64__)
+#define GOOGLE_PROTOBUF_ARCH_X64 1
+#define GOOGLE_PROTOBUF_ARCH_64_BIT 1
+#elif defined(_M_IX86) || defined(__i386__)
+#define GOOGLE_PROTOBUF_ARCH_IA32 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__QNX__)
+#define GOOGLE_PROTOBUF_ARCH_ARM_QNX 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__ARMEL__)
+#define GOOGLE_PROTOBUF_ARCH_ARM 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__MIPSEL__)
+#define GOOGLE_PROTOBUF_ARCH_MIPS 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__pnacl__)
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#elif defined(__ppc__)
+#define GOOGLE_PROTOBUF_ARCH_PPC 1
+#define GOOGLE_PROTOBUF_ARCH_32_BIT 1
+#else
+#error Host architecture was not detected as supported by protobuf
+#endif
 
-namespace google {
-namespace protobuf {
-namespace io {
+#if defined(__APPLE__)
+#define GOOGLE_PROTOBUF_OS_APPLE
+#elif defined(__native_client__)
+#define GOOGLE_PROTOBUF_OS_NACL
+#endif
 
-inline bool CodedInputStream::InternalReadStringInline(string* buffer,
-                                                       int size) {
-  if (size < 0) return false;  // security: size is often user-supplied
-
-  if (BufferSize() >= size) {
-    STLStringResizeUninitialized(buffer, size);
-    // When buffer is empty, string_as_array(buffer) will return NULL but memcpy
-    // requires non-NULL pointers even when size is 0. Hench this check.
-    if (size > 0) {
-      memcpy(string_as_array(buffer), buffer_, size);
-      Advance(size);
-    }
-    return true;
-  }
-
-  return ReadStringFallback(buffer, size);
-}
-
-}  // namespace io
-}  // namespace protobuf
-}  // namespace google
-#endif  // GOOGLE_PROTOBUF_IO_CODED_STREAM_INL_H__
+#endif  // GOOGLE_PROTOBUF_PLATFORM_MACROS_H_
